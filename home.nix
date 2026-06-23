@@ -1,0 +1,252 @@
+{ inputs, pkgs, ... }:
+
+{
+  home.username      = "obiwan";
+  home.homeDirectory = "/home/obiwan";
+  home.stateVersion  = "26.05";
+
+  imports = [
+    inputs.noctalia.homeModules.default
+  ];
+
+  programs.noctalia = {
+    enable = true;
+
+    settings = {
+      theme = {
+        mode    = "dark";
+        source  = "builtin";
+        builtin = "Catppuccin";
+      };
+
+      wallpaper = {
+        enabled      = true;
+        default.path = "/home/obiwan/wallpapers/wallpaper.png";
+      };
+    };
+  };
+
+  programs.vscode = {
+    enable = true;
+    package = pkgs.vscode.fhs;
+    
+    # Updated syntax to clear the evaluation warnings
+    profiles.default = {
+      extensions = with pkgs.vscode-extensions; [
+        ms-vscode.cpptools
+        ms-python.python
+        rust-lang.rust-analyzer
+        mkhl.direnv
+      ];
+
+      userSettings = {
+        "workbench.colorTheme" = "Catppuccin Mocha";
+        "editor.formatOnSave" = true;
+        "terminal.integrated.defaultProfile.linux" = "bash";
+      };
+    };
+  };
+
+   # Let Nix natively manage and inject Starship into your Ghostty terminal shells[cite: 4]
+  programs.starship = {
+    enable = true;
+    enableBashIntegration = true;
+
+    # Custom settings to force the bracketed "Omarchy look" you like
+    settings = {
+      format = "\\[$username@$hostname:$directory\\]$git_branch$character";
+
+      username = {
+        style_user = "green bold";
+        show_always = true;
+        format = "[$user]($style)";
+      };
+
+      hostname = {
+        style = "green bold";
+        ssh_only = false;
+        format = "[$hostname]($style)";
+      };
+
+      directory = {
+        style = "blue bold";
+        truncation_length = 8;
+        truncation_symbol = "…/";
+      };
+
+      git_branch = {
+        style = "yellow bold";
+        symbol = ""; # Removed default git icon to match standard prompt
+        format = "([$branch]($style))";
+      };
+
+      character = {
+        success_symbol = "[\\$ ](bold white)";
+        error_symbol = "[\\$ ](bold red)";
+      };
+    };
+  };
+
+  xdg.configFile."niri/config.kdl".text = ''
+    // --------------------------------------------------------------------------
+    // Input
+    // --------------------------------------------------------------------------
+    input {
+      keyboard {
+        repeat-delay 200
+        repeat-rate 35
+        xkb {
+          layout "us"
+        }
+      }
+
+      touchpad {
+        tap
+        natural-scroll
+        scroll-method "two-finger"
+      }
+
+      focus-follows-mouse
+    }
+
+    // --------------------------------------------------------------------------
+    // Appearance
+    // --------------------------------------------------------------------------
+    prefer-no-csd
+
+    layout {
+      gaps 8
+      center-focused-column "never"
+
+      preset-column-widths {
+        proportion 0.33333
+        proportion 0.5
+        proportion 0.66667
+      }
+
+      default-column-width { proportion 0.5; }
+
+      focus-ring {
+        width 2
+        active-color "#89b4fa"
+        inactive-color "#313244"
+      }
+
+      border {
+        off
+      }
+    }
+
+    // --------------------------------------------------------------------------
+    // Autostart — ORDER MATTERS
+    // dbus-update-activation-environment MUST come before noctalia so that
+    // WAYLAND_DISPLAY and XDG_CURRENT_DESKTOP are set in the environment
+    // that Noctalia inherits. Without this Noctalia starts but renders nothing.
+    // --------------------------------------------------------------------------
+    spawn-at-startup "dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP=niri"
+    spawn-at-startup "xwayland-satellite"
+    spawn-at-startup "noctalia"
+
+    // Clipboard history daemon
+    spawn-at-startup "wl-paste" "--type" "text" "--watch" "cliphist" "store"
+    spawn-at-startup "wl-paste" "--type" "image" "--watch" "cliphist" "store"
+    spawn-at-startup "wl-paste" "--type" "text" "--primary" "--watch" "cliphist" "store"
+
+    // --------------------------------------------------------------------------
+    // Keybinds
+    // --------------------------------------------------------------------------
+    binds {
+      // Core Apps
+      Mod+Return      { spawn "ghostty"; }
+      Mod+B 	      { spawn "google-chrome"; }
+      Mod+Space	      { spawn "fuzzel"; }
+      
+      // Window Management
+      Mod+W           { close-window; }
+      Mod+F           { maximize-column; }
+      Mod+Shift+F     { fullscreen-window; }
+      Mod+C           { center-column; }
+
+      // Screen Locking
+      Mod+L           { spawn "swaylock"; }
+
+      // Navigation
+      Mod+Left        { focus-column-left; }
+      Mod+Right       { focus-column-right; }
+      Mod+Up          { focus-window-up; }
+      Mod+Down        { focus-window-down; }
+
+      // Window Moving
+      Mod+Shift+Left  { move-column-left; }
+      Mod+Shift+Right { move-column-right; }
+      Mod+Shift+Up    { move-window-up; }
+      Mod+Shift+Down  { move-window-down; }
+      Mod+Comma       { consume-or-expel-window-left; }
+      Mod+Period      { consume-or-expel-window-right; }
+
+      // Sizing
+      Mod+Minus       { set-column-width "-10%"; }
+      Mod+Equal       { set-column-width "+10%"; }
+      Mod+Shift+Minus { set-window-height "-10%"; }
+      Mod+Shift+Equal { set-window-height "+10%"; }
+      Mod+R           { switch-preset-column-width; }
+
+      // Workspaces
+      Mod+1 { focus-workspace 1; }
+      Mod+2 { focus-workspace 2; }
+      Mod+3 { focus-workspace 3; }
+      Mod+4 { focus-workspace 4; }
+      Mod+5 { focus-workspace 5; }
+      Mod+Shift+1 { move-column-to-workspace 1; }
+      Mod+Shift+2 { move-column-to-workspace 2; }
+      Mod+Shift+3 { move-column-to-workspace 3; }
+      Mod+Shift+4 { move-column-to-workspace 4; }
+      Mod+Shift+5 { move-column-to-workspace 5; }
+      Mod+BracketLeft  { focus-workspace-up; }
+      Mod+BracketRight { focus-workspace-down; }
+      
+      // Captures & System
+      Mod+S     { screenshot; }
+      Print     { screenshot-screen; }
+      Alt+Print { screenshot-window; }
+
+      Mod+Shift+E { quit; }
+      Mod+Shift+P { power-off-monitors; }
+    }
+  '';
+
+  programs.bash.enable    = true;
+  programs.ghostty.enable = true;
+  programs.neovim = {
+    enable = true;
+    defaultEditor = true;
+
+    # Force NixOS to bundle wl-clipboard directly inside Neovim
+    extraPackages = with pkgs; [
+      wl-clipboard
+      cliphist
+    ];
+    # Vimscript configuration lives here:
+    extraConfig= ''
+      set number
+      set relativenumber
+    '';
+
+    # Lua configuration lives here:
+    initLua= ''
+      vim.g.clipboard = {
+        name = 'wl-clipboard',
+	copy = {
+	  ['+'] = 'wl-copy',
+	  ['*'] = 'wl-copy',
+	},
+	paste = {
+	  ['+'] = 'wl-paste --no-newline',
+	  ['*'] = 'wl-paste --no-newline',
+	},
+	cache_enabled =1,
+      }
+      vim.opt.clipboard = "unnamedplus"
+    '';
+  };
+}
