@@ -30,6 +30,7 @@
     enable = true;
     package = pkgs.vscode.fhs;
     
+    # Updated syntax to clear the evaluation warnings
     profiles.default = {
       extensions = with pkgs.vscode-extensions; [
         ms-vscode.cpptools
@@ -46,12 +47,16 @@
     };
   };
 
+   # Let Nix natively manage and inject Starship into your Ghostty terminal shells[cite: 4]
   programs.starship = {
     enable = true;
     enableBashIntegration = true;
 
+    # Custom settings to force the bracketed "Omarchy look" you like
     settings = {
+      include = [ "~/.cache/noctalia/starship-palette.toml" ];
       palette = "noctalia";
+
       format = "\\[$username@$hostname:$directory\\]$git_branch$character";
 
       username = {
@@ -74,7 +79,7 @@
 
       git_branch = {
         style = "yellow bold";
-        symbol = ""; 
+        symbol = ""; # Removed default git icon to match standard prompt
         format = "([$branch]($style))";
       };
 
@@ -82,21 +87,13 @@
         success_symbol = "[\\$ ](bold white)";
         error_symbol = "[\\$ ](bold red)";
       };
-
-      # Static noctalia palette fallback to keep warnings completely silent
-      palettes.noctalia = {
-        black = "#11111b";
-        blue = "#89b4fa";
-        green = "#a6e3a1";
-        red = "#f38ba8";
-        white = "#cdd6f4";
-        yellow = "#f9e2af";
-      };
     };
   };
 
   xdg.configFile."niri/config.kdl".text = ''
+    // --------------------------------------------------------------------------
     // Input
+    // --------------------------------------------------------------------------
     input {
       keyboard {
         repeat-delay 200
@@ -115,7 +112,9 @@
       focus-follows-mouse
     }
 
+    // --------------------------------------------------------------------------
     // Appearance
+    // --------------------------------------------------------------------------
     prefer-no-csd
 
     layout {
@@ -141,7 +140,12 @@
       }
     }
 
+    // --------------------------------------------------------------------------
     // Autostart — ORDER MATTERS
+    // dbus-update-activation-environment MUST come before noctalia so that
+    // WAYLAND_DISPLAY and XDG_CURRENT_DESKTOP are set in the environment
+    // that Noctalia inherits. Without this Noctalia starts but renders nothing.
+    // --------------------------------------------------------------------------
     spawn-at-startup "dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP=niri"
     spawn-at-startup "xwayland-satellite"
     spawn-at-startup "noctalia"
@@ -151,24 +155,31 @@
     spawn-at-startup "wl-paste" "--type" "image" "--watch" "cliphist" "store"
     spawn-at-startup "wl-paste" "--type" "text" "--primary" "--watch" "cliphist" "store"
 
+    // --------------------------------------------------------------------------
     // Keybinds
+    // --------------------------------------------------------------------------
     binds {
+      // Core Apps
       Mod+Return      { spawn "ghostty"; }
-      Mod+B           { spawn "google-chrome"; }
-      Mod+Space       { spawn "fuzzel"; }
+      Mod+B 	      { spawn "google-chrome"; }
+      Mod+Space	      { spawn "fuzzel"; }
       
+      // Window Management
       Mod+W           { close-window; }
       Mod+F           { maximize-column; }
       Mod+Shift+F     { fullscreen-window; }
       Mod+C           { center-column; }
 
+      // Screen Locking
       Mod+L           { spawn "swaylock"; }
 
+      // Navigation
       Mod+Left        { focus-column-left; }
       Mod+Right       { focus-column-right; }
       Mod+Up          { focus-window-up; }
       Mod+Down        { focus-window-down; }
 
+      // Window Moving
       Mod+Shift+Left  { move-column-left; }
       Mod+Shift+Right { move-column-right; }
       Mod+Shift+Up    { move-window-up; }
@@ -176,12 +187,14 @@
       Mod+Comma       { consume-or-expel-window-left; }
       Mod+Period      { consume-or-expel-window-right; }
 
+      // Sizing
       Mod+Minus       { set-column-width "-10%"; }
       Mod+Equal       { set-column-width "+10%"; }
       Mod+Shift+Minus { set-window-height "-10%"; }
       Mod+Shift+Equal { set-window-height "+10%"; }
       Mod+R           { switch-preset-column-width; }
 
+      // Workspaces
       Mod+1 { focus-workspace 1; }
       Mod+2 { focus-workspace 2; }
       Mod+3 { focus-workspace 3; }
@@ -195,6 +208,7 @@
       Mod+BracketLeft  { focus-workspace-up; }
       Mod+BracketRight { focus-workspace-down; }
       
+      // Captures & System
       Mod+S     { screenshot; }
       Print     { screenshot-screen; }
       Alt+Print { screenshot-window; }
@@ -204,51 +218,40 @@
     }
   '';
 
-  programs.bash.initExtra = ''
-    nix() {
-      if [ "$1" = "rebuild" ]; then
-        # Check if we are currently sandboxed inside a project shell
-        if [ -n "$IN_NIX_SHELL" ] || [ -n "$PRISTINE_ENV" ]; then
-          echo -e "\033[1;31m[ERROR]\033[0m You are currently inside a project development shell."
-          echo "Exit this shell ('exit') before altering the global system configuration."
-          return 1
-        fi
-        
-        sudo nixos-rebuild switch --flake path:/home/obiwan/dotfiles/nixos#nixos
-      else
-        command nix "$@"
-      fi
-    }
-  '';
- 
+  programs.bash = {
+    enable = true;
+    shellAliases = {
+      rebuild = "sudo nixos-rebuild switch --flake path:/home/obiwan/dotfiles/nixos#nixos";
+  };
   programs.ghostty.enable = true;
-
   programs.neovim = {
     enable = true;
     defaultEditor = true;
 
+    # Force NixOS to bundle wl-clipboard directly inside Neovim
     extraPackages = with pkgs; [
       wl-clipboard
       cliphist
     ];
-
-    extraConfig = ''
+    # Vimscript configuration lives here:
+    extraConfig= ''
       set number
       set relativenumber
     '';
 
-    initLua = ''
+    # Lua configuration lives here:
+    initLua= ''
       vim.g.clipboard = {
         name = 'wl-clipboard',
-        copy = {
-          ['+'] = 'wl-copy',
-          ['*'] = 'wl-copy',
-        },
-        paste = {
-          ['+'] = 'wl-paste --no-newline',
-          ['*'] = 'wl-paste --no-newline',
-        },
-        cache_enabled = 1,
+	copy = {
+	  ['+'] = 'wl-copy',
+	  ['*'] = 'wl-copy',
+	},
+	paste = {
+	  ['+'] = 'wl-paste --no-newline',
+	  ['*'] = 'wl-paste --no-newline',
+	},
+	cache_enabled =1,
       }
       vim.opt.clipboard = "unnamedplus"
     '';
