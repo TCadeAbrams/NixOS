@@ -218,7 +218,9 @@
     gh
     openocd         # On-Chip Debugger for flashing embedded targets
     minicom         # Serial monitor for debugging UART/UART-to-USB boards
-
+    usbutils        # USB utilities
+    v4l-utils       # Video for Linux utilities
+    
     # Terminal
     ghostty
 
@@ -246,7 +248,8 @@
     gst_all_1.gst-plugins-good
     gst_all_1.gst-plugins-bad 
     gst_all_1.gst-plugins-ugly
-
+    gst_all_1.gst-libav          # contains avdec_h264
+    
     # Networking tools (useful for robotics networking debug)
     networkmanagerapplet
     wireshark
