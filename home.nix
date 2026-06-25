@@ -6,31 +6,10 @@
   home.stateVersion  = "26.05";
 
   imports = [
-    inputs.noctalia.homeModules.default
+  inputs.noctalia.homeModules.default
   ];
 
-  programs.noctalia = {
-    enable = true;
-  };
-
-  programs.vscode = {
-    enable = true;
-    package = pkgs.vscode.fhs;
-    
-    profiles.default = {
-      extensions = with pkgs.vscode-extensions; [
-        ms-vscode.cpptools
-        ms-python.python
-        rust-lang.rust-analyzer
-        mkhl.direnv
-      ];
-
-      userSettings = {
-        "editor.formatOnSave" = true;
-        "terminal.integrated.defaultProfile.linux" = "bash";
-      };
-    };
-  };
+  programs.noctalia.enable = true;
 
   programs.starship = {
     enable = true;
@@ -38,7 +17,7 @@
 
     settings = {
       palette = "noctalia";
-      format = "\\[$username@$hostname:$directory\\]$git_branch$character";
+      format = "[$username@$hostname:$directory]($style)$git_branch$character";
 
       username = {
         style_user = "green bold";
@@ -192,23 +171,26 @@
    include "~/.config/niri/noctalia.kdl"
   '';
 
-  programs.bash.initExtra = ''
-    nix() {
-      if [ "$1" = "rebuild" ]; then
-        # Check if we are currently sandboxed inside a project shell
-        if [ -n "$IN_NIX_SHELL" ] || [ -n "$PRISTINE_ENV" ]; then
-          echo -e "\033[1;31m[ERROR]\033[0m You are currently inside a project development shell."
-          echo "Exit this shell ('exit') before altering the global system configuration."
-          return 1
-        fi
+  programs.bash = {
+    enable = true; 
+    
+    initExtra = ''
+      nix() {
+        if [ "$1" = "rebuild" ]; then
+          # Check if we are currently sandboxed inside a project shell
+          if [ -n "$IN_NIX_SHELL" ] || [ -n "$PRISTINE_ENV" ]; then
+            echo -e "\033[1;31m[ERROR]\033[0m You are currently inside a project development shell."
+            echo "Exit this shell ('exit') before altering the global system configuration."
+            return 1
+          fi
         
-        sudo nixos-rebuild switch --flake path:/home/obiwan/dotfiles/nixos#nixos
-      else
-        command nix "$@"
-      fi
-    }
+          sudo nixos-rebuild switch --flake path:/home/obiwan/dotfiles/nixos#nixos
+        else
+          command nix "$@"
+        fi
+      }
   '';
- 
+ };
    
   gtk = {
     enable = true;
