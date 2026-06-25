@@ -11,19 +11,6 @@
 
   programs.noctalia = {
     enable = true;
-
-    settings = {
-      theme = {
-        mode    = "dark";
-        source  = "builtin";
-        builtin = "Catppuccin";
-      };
-
-      wallpaper = {
-        enabled      = true;
-        default.path = "/home/obiwan/wallpapers/wallpaper.png";
-      };
-    };
   };
 
   programs.vscode = {
@@ -39,7 +26,6 @@
       ];
 
       userSettings = {
-        "workbench.colorTheme" = "Catppuccin Mocha";
         "editor.formatOnSave" = true;
         "terminal.integrated.defaultProfile.linux" = "bash";
       };
@@ -118,6 +104,12 @@
     // Appearance
     prefer-no-csd
 
+    // Force matching rounded corners for all windows
+    window-rule {
+        geometry-corner-radius 12
+        clip-to-geometry true
+    }
+
     layout {
       gaps 8
       center-focused-column "never"
@@ -129,12 +121,6 @@
       }
 
       default-column-width { proportion 0.5; }
-
-      focus-ring {
-        width 2
-        active-color "#89b4fa"
-        inactive-color "#313244"
-      }
 
       border {
         off
@@ -202,6 +188,8 @@
       Mod+Shift+E { quit; }
       Mod+Shift+P { power-off-monitors; }
     }
+    
+   include "~/.config/niri/noctalia.kdl"
   '';
 
   programs.bash.initExtra = ''
@@ -221,8 +209,27 @@
     }
   '';
  
-  programs.ghostty.enable = true;
+   
+  gtk = {
+    enable = true;
+    theme = {
+      name = "adw-gtk3-dark"; # The foundational engine mapped by Noctalia
+      package = pkgs.adw-gtk3;
+    };
+  };
 
+  programs.ghostty = {
+    enable = true;
+    settings = {
+      # Removes header artifacts
+      window-decoration = false; 
+      gtk-titlebar = false;      
+    
+      # Injects the smooth AMOLED translucent layout canvas
+      background-opacity = 0.70;
+      background-blur = true;
+    };
+   };
   programs.neovim = {
     enable = true;
     defaultEditor = true;
